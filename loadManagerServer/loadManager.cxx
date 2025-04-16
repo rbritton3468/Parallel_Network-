@@ -13,14 +13,15 @@ class Process{
 };
 
 
-
 class ProcessServer{
     private:
         int ServerID;
-        int processExitCode;
+        Process* currentProcess;
 
     public:
-
+        std::string process(Process process){
+            // Add process to the server
+        }
 
 };
 
