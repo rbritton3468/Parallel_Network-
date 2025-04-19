@@ -7,14 +7,14 @@
 #include <mutex>
 #include "loadManager.hpp"
 
-
+// g++ -std=c++20 -I. -pthread loadManager.cxx -lcurl -o loadManager
 constexpr uint16_t ClientReceivePort = 9000;
 constexpr uint16_t InitializationPort = 9999;
 constexpr uint16_t MY_PORT = 9001;
 
 
 std::vector<ProcessServer*> processServers;
-
+std::vector<Client*> Clients;
 
 
 class ProcessorList{
@@ -38,15 +38,39 @@ class ProcessorList{
         }
 
 };
-
 class Process{
-    std::string processName;
-    std::string processPath;
-    std::string processArgs;
-    std::string processStatus;
-    size_t processID;
-    size_t runTime;
+    public:
+        std::string processName;
+        std::string processID;
+        std::string processPath;
+        std::string processArguments;
+        std::string processStatus;
+        std::string processServerID;
+        std::string processServerIP;
+        uint16_t processServerPort;
+
+        Process(std::string name, std::string id, std::string path, std::string arguments, std::string status, std::string serverID, std::string serverIP, uint16_t serverPort):
+        processName(name), processID(id), processPath(path), processArguments(arguments), processStatus(status), processServerID(serverID), processServerIP(serverIP), processServerPort(serverPort) {
+        }
 };
+
+class Client{
+    
+    public:
+    boost::asio::ip::udp::endpoint clientEndPoint;
+    uint16_t sendPort;
+    std::string IPAddress;
+    boost::asio::io_context io;
+    size_t clientID;
+    std::queue<std::string> ProcessQueue;
+    std::queue<std::string> resultQueue;
+
+        Client(size_t id,std::string ip, uint16_t sendPort):
+        clientID(id), IPAddress(ip),sendPort(sendPort),
+        clientEndPoint(boost::asio::ip::make_address(IPAddress), sendPort) // Properly initialize the endpoint
+        {}
+};
+
 
 
 class ProcessServer{
@@ -80,8 +104,6 @@ class LoadManager{
         int serverPort;
     public:
         std::string addProcess(Process process){
-
-
             // Add process to the server
             // This function will be called when a request is received from the client
             // It will parse the request and call the appropriate function
@@ -104,23 +126,59 @@ void ProcessServerInitialization(){
     boost::asio::ip::udp::socket InitializationSocket(io, {boost::asio::ip::udp::v4(), InitializationPort});
 
     std::array<char, 1024> buf;
-    boost::asio::ip::udp::endpoint sender;
+    
     while (true)
     {
+        boost::asio::ip::udp::endpoint sender;
         auto n = InitializationSocket.receive_from(boost::asio::buffer(buf), sender);
         std::string processServerdata = std::string(std::string_view(buf.data(), n));
+        
+        std::string ip = sender.address().to_string();
+        uint processServerPort = sender.port();
+        //uint16_t processServerPortInt = std::stoi(processServerPort);
 
-        std::string ip = processServerdata.substr(0, processServerdata.find('\n'));
-        std::string processServerPort = processServerdata.substr(processServerdata.find('\n')+1);
-        uint16_t processServerPortInt = std::stoi(processServerPort);
-
-        ProcessServer* processServer = new ProcessServer(idCounter,ip,processServerPortInt,9002+idCounter);
+        ProcessServer* processServer = new ProcessServer(idCounter,ip,processServerPort,9002+idCounter);
         std::cout<<"New Process Server ID: " << idCounter << " IP: " << ip << " Port: " << processServerPort<< std::endl;
+        
         processServers.push_back(processServer);
         idCounter++;
     }
-    
 } 
+
+void clientAccept(){
+    size_t clientID = 0;
+    boost::asio::io_context io;
+    boost::asio::ip::udp::socket Clientsocket(io, {boost::asio::ip::udp::v4(), MY_PORT});
+    while(true){
+        std::array<char, 1024> buf;
+        boost::asio::ip::udp::endpoint clientEndPoint;
+        auto n = Clientsocket.receive_from(boost::asio::buffer(buf), clientEndPoint);
+        uint16_t clientPort = clientEndPoint.port();
+        std::string clientIP = clientEndPoint.address().to_string();
+        
+
+
+
+
+        std::string clientdata = std::string(std::string_view(buf.data(), n));
+        std::cout << "New Client ID: " << clientID << " IP: " << clientIP << " Port: " << clientPort<< std::endl;
+        Client* client = new Client(clientID,clientIP,clientPort);
+        client->ProcessQueue.push(clientdata);
+        Clients.push_back(client);
+        clientID++;
+        // Process the client data
+        // This function will be called when a request is received from the client
+        // It will parse the request and call the appropriate function
+
+    }
+
+
+}
+
+
+
+
+
 
 void processRequest(std::string request){
     // Process the request

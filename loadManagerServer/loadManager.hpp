@@ -8,10 +8,11 @@
 
 
 
-class ProcessorList;                            //│  
-class Process;                                  //│
-class ProcessServer;                            //│
-class LoadManager;                              //│
+class ProcessorList;                              
+class Process;                                
+class ProcessServer;                            
+class LoadManager;                             
+class Client;                                   
                    
 size_t write_callback(char *contents, size_t size,
 size_t nmemb, std::string *response); // functions
