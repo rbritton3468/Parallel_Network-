@@ -5,5 +5,6 @@
 
 int main(){
     compressFile("testFile");
+    decompressFile("testFile.cmp");
     return 0;
 }

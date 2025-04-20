@@ -7,6 +7,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <queue>
+#include <sys/stat.h>
 
 
 // tree node used for compression
@@ -211,14 +212,17 @@ std::string compressFile(const std::string& inputExe){
     std::ofstream outputFile(inputExe + ".cmp", std::ios::binary);
 
     uint32_t treeSize = static_cast<uint32_t>(finalBytesTree.size());
+
+    // std::cout << "tree size is " << treeSize << std::endl;
+
     outputFile.write(reinterpret_cast<const char*>(&treeSize), sizeof(treeSize));
     outputFile.write(reinterpret_cast<const char*>(finalBytesTree.data()), finalBytesTree.size());
     outputFile.write(reinterpret_cast<const char*>(finalBytes.data()), finalBytes.size());
 
     outputFile.close();
 
-    std::cout << "old had a size of " << binary.size() << " bytes"<< std::endl;
-    std::cout << "compressed has a size of " << finalBytes.size() << " bytes" << std::endl;
+    // std::cout << "old had a size of " << binary.size() << " bytes"<< std::endl;
+    // std::cout << "compressed has a size of " << finalBytes.size() << " bytes" << std::endl;
 
     // returning name of output
     return inputExe + ".cmp";
@@ -227,3 +231,110 @@ std::string compressFile(const std::string& inputExe){
 
 //--------------------CODE TO DECOMPRESS FILE------------------------------
 
+// recursively called function to build the tree
+TreeNode* recursiveBuildTree(const std::string& bits, int& index){
+    if(index >= bits.size()){
+        return nullptr;
+    }
+
+    if(bits[index] == '1'){
+        index++;
+
+        uint8_t val = 0;
+        for(int i = 0; i < 8; i++){
+            val <<= 1;
+            if(bits[index] == '1'){
+                val |= 1;
+            }
+            index++;
+        }
+        return new TreeNode(val, 0);
+    }
+    else{
+        index++;
+        TreeNode* left = recursiveBuildTree(bits, index);
+        TreeNode* right = recursiveBuildTree(bits, index);
+        return new TreeNode(left, right);
+    }
+}
+
+
+// function to help rebuild the tree
+TreeNode* buildTreeFromVector(std::vector<uint8_t> compressedTree){
+    std::string bits = "";
+
+    for(uint8_t byte: compressedTree){
+        for(int i = 7; i >= 0; i--){
+            bits += ((byte >> i) & 1) ? '1' : '0';
+        }
+    }
+
+    int index = 0;
+
+    return recursiveBuildTree(bits, index);
+}
+
+
+void decompressFile(const std::string& compressedFile){
+    // first getting the bytes in a vector representation
+    std::vector<uint8_t> binary = readBinaryFile(compressedFile);
+
+    // getting the size of the metadata
+    uint32_t metadataSize = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t byte = binary.front();
+        binary.erase(binary.begin());
+        metadataSize |= (static_cast<uint32_t>(byte) << (8 * i));
+    }
+
+    // parsing the data into real data and metadata
+    std::vector<uint8_t> compressedTree;
+    std::vector<uint8_t> decompressedData;
+
+    for(int i = 0; i < binary.size(); i++){
+        if(i < metadataSize){
+            compressedTree.push_back(binary[i]);
+        }
+        else{
+            decompressedData.push_back(binary[i]);
+        }
+    }
+
+    // building our tree so we can use it again
+    TreeNode* treeRoot = buildTreeFromVector(compressedTree);
+
+    // converting data to a string of bits
+    std::string bitsToDecode = "";
+    for(uint8_t byte: decompressedData){
+        for (int i = 7; i >= 0; --i) {
+            bitsToDecode += ((byte >> i) & 1) ? '1' : '0';
+        }
+    }
+
+    // decoding using tree
+    std::vector<uint8_t> output;
+    TreeNode* currNode = treeRoot;
+
+    for(char bit: bitsToDecode){
+        if(bit == '0'){
+            currNode = currNode->left;
+        }
+        else{
+            currNode = currNode->right;
+        }
+
+        if(currNode->isLeaf()){
+            output.push_back(currNode->val);
+            currNode = treeRoot;
+        }
+    }
+
+    // writing back data to the file
+    std::string fileName = compressedFile.substr(0, compressedFile.size() - 4) + ".dcmp";
+
+    std::ofstream finalFile(fileName, std::ios::binary);
+    finalFile.write(reinterpret_cast<const char*>(output.data()), output.size());
+    finalFile.close();
+
+    chmod(fileName.c_str(), 0755);
+}
