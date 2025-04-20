@@ -17,6 +17,16 @@ std::vector<ProcessServer*> processServers;
 std::vector<Client*> Clients;
 
 
+class ClientMap{
+    public:
+        std::mutex mtx;
+        std::unordered_map<std::string, Client*> map;
+
+
+
+};
+
+
 class ProcessorList{
     private:
         std::mutex mtx;
