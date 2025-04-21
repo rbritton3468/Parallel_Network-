@@ -11,11 +11,7 @@
 
 int main(int argc, char* argv[])
 {
-    if(argc < 3) {
-        std::cerr << "usage: peer_a <peer‑ip> <peer-port>\n";
-        return 1;
-    }
-    
+    if(argc < 3) { std::cerr << "usage: peer_a <peer‑ip> <peer-port>\n"; return 1; }
     std::cout<<"Process Server ID: " << argv[1] << " Port: " << argv[2] << std::endl;
     std::string initMessage;
     initMessage = argv[1];
@@ -37,8 +33,13 @@ int main(int argc, char* argv[])
     boost::asio::ip::udp::endpoint sender(boost::asio::ip::make_address("127.0.0.1"), RecevePort);
     for (;;){
         auto n = sock.receive_from(boost::asio::buffer(buf), sender);
+        
         std::cout << "\n<managerServer> " << std::string_view(buf.data(), n) << '\n';
 
     }
+
+
+
+
 
 }

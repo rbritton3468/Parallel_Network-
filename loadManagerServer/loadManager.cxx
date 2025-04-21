@@ -202,7 +202,6 @@ void processRequest(std::string request){
     }
 }
 
-std::mutex processServersMutex;
 
 int main(int argc, char* argv[]) {
     if(argc < 0) {
@@ -218,20 +217,12 @@ int main(int argc, char* argv[]) {
     //std::cout << "> " << std::flush;
     while (std::getline(std::cin, line))
     {
-        std::cout << "> " << std::flush;
-        std::lock_guard<std::mutex> lock(processServersMutex);
-        for(ProcessServer* processServer : processServers){
-            processServer->sendMessage(line);
-        }
+    std::cout << "> " << std::flush;
+    for(ProcessServer* processServer : processServers){
+        processServer->sendMessage(line);
     }
 
-    initializationThread.join(); // finish the thread first
 
-    std::lock_guard<std::mutex> lock(processServersMutex);
-    for (ProcessServer* processServer : processServers) {
-        delete processServer;
-    }
-
-    processServers.clear();
+}
     return 0;
 }
