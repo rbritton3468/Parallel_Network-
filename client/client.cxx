@@ -38,7 +38,9 @@ int main(int argc, char* argv[]) {
     sock.send_to(boost::asio::buffer(exeCMD), serverEndPoint);
     std::thread timerThread(TimOutTimer);//Process Server has 5 seconds to send the initialization message or timeout occurs
     timerThread.detach();
+
     sock.receive_from(boost::asio::buffer(buf), serverEndPoint);
+    timeOut.store(false);//starts timeout
     sock.receive_from(boost::asio::buffer(buf), serverEndPoint);
 
 
