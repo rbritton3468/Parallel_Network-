@@ -12,6 +12,8 @@ constexpr uint16_t ClientReceivePort = 9000;
 constexpr uint16_t InitializationPort = 9999;
 constexpr uint16_t MY_PORT = 9001;
 
+boost::asio::io_context io;
+boost::asio::ip::udp::socket Clientsocket(io, {boost::asio::ip::udp::v4(), ClientReceivePort});
 
 std::vector<ProcessServer*> processServers;
 std::vector<Client*> Clients;
@@ -21,7 +23,11 @@ class ClientMap{
     public:
         std::mutex mtx;
         std::unordered_map<std::string, Client*> map;
+    void addProcess(std::string ip){
 
+
+    }
+ 
 
 
 };
@@ -67,17 +73,18 @@ class Process{
 class Client{
     
     public:
-    boost::asio::ip::udp::endpoint clientEndPoint;
+
     uint16_t sendPort;
     std::string IPAddress;
     boost::asio::io_context io;
     size_t clientID;
     std::queue<std::string> ProcessQueue;
     std::queue<std::string> resultQueue;
-
+    boost::asio::ip::udp::endpoint clientEndPoint;
+    
         Client(size_t id,std::string ip, uint16_t sendPort):
         clientID(id), IPAddress(ip),sendPort(sendPort),
-        clientEndPoint(boost::asio::ip::make_address(IPAddress), sendPort) // Properly initialize the endpoint
+        clientEndPoint(boost::asio::ip::make_address(ip), sendPort) // Properly initialize the endpoint
         {}
 };
 
@@ -141,13 +148,19 @@ void ProcessServerInitialization(){
     {
         boost::asio::ip::udp::endpoint sender;
         auto n = InitializationSocket.receive_from(boost::asio::buffer(buf), sender);
+
+        
         std::string processServerdata = std::string(std::string_view(buf.data(), n));
         
         std::string ip = sender.address().to_string();
         uint processServerPort = sender.port();
-        //uint16_t processServerPortInt = std::stoi(processServerPort);
+
+
 
         ProcessServer* processServer = new ProcessServer(idCounter,ip,processServerPort,9002+idCounter);
+        processServer->sendMessage("Process Server Initialized");
+        
+
         std::cout<<"New Process Server ID: " << idCounter << " IP: " << ip << " Port: " << processServerPort<< std::endl;
         
         processServers.push_back(processServer);
@@ -157,19 +170,15 @@ void ProcessServerInitialization(){
 
 void clientAccept(){
     size_t clientID = 0;
-    boost::asio::io_context io;
-    boost::asio::ip::udp::socket Clientsocket(io, {boost::asio::ip::udp::v4(), MY_PORT});
+
     while(true){
         std::array<char, 1024> buf;
         boost::asio::ip::udp::endpoint clientEndPoint;
         auto n = Clientsocket.receive_from(boost::asio::buffer(buf), clientEndPoint);
         uint16_t clientPort = clientEndPoint.port();
         std::string clientIP = clientEndPoint.address().to_string();
-        
-
-
-
-
+        Clientsocket.send_to(boost::asio::buffer("Client Initialized"), clientEndPoint);
+    
         std::string clientdata = std::string(std::string_view(buf.data(), n));
         std::cout << "New Client ID: " << clientID << " IP: " << clientIP << " Port: " << clientPort<< std::endl;
         Client* client = new Client(clientID,clientIP,clientPort);
@@ -209,12 +218,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     std::thread initializationThread(ProcessServerInitialization);
-    //boost::asio::io_context io;
-    //boost::asio::ip::udp::socket sock(io, {boost::asio::ip::udp::v4(), MY_PORT});
-    //boost::asio::ip::udp::endpoint peer(boost::asio::ip::make_address("127.0.0.1"), ClientReceivePort);
+    std::thread clientThread(clientAccept);
 
     std::string line;
-    //std::cout << "> " << std::flush;
+
     while (std::getline(std::cin, line))
     {
     std::cout << "> " << std::flush;
