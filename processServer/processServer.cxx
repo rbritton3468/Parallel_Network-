@@ -3,11 +3,22 @@
 #include <iostream>
 #include <thread>
 #include <boost/asio.hpp>
+#include <chrono>
+#include <atomic>
+
+std::atomic<bool> timeOut = true;
 
 
 
+// g++ -std=c++20 -I. -pthread processServer.cxx -lcurl -o processServer
 
-
+void TimOutTimer(){
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    if(timeOut.load()){
+        std::cout << "Timeout Occurred" << std::endl;
+        exit(1);
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -28,9 +39,19 @@ int main(int argc, char* argv[])
     boost::asio::ip::udp::endpoint initServer(boost::asio::ip::make_address("127.0.0.1"), 9999);
 
 
-    sock.send_to(boost::asio::buffer(initMessage), initServer);
+    sock.send_to(boost::asio::buffer(initMessage), initServer);//send initialization message to load manager server
+    std::thread timerThread(TimOutTimer);//Process Server has 5 seconds to send the initialization message or timeout occurs
+    timerThread.detach();
 
-    boost::asio::ip::udp::endpoint sender(boost::asio::ip::make_address("127.0.0.1"), RecevePort);
+    sock.receive_from(boost::asio::buffer(buf), initServer);
+    std::cout << "processServer Port: " << initServer.port() << '\n';
+    timeOut.store(false);//stops timeout 
+
+
+    boost::asio::ip::udp::endpoint sender(boost::asio::ip::make_address("127.0.0.1"), initServer.port());
+
+
+
     for (;;){
         auto n = sock.receive_from(boost::asio::buffer(buf), sender);
         
@@ -42,4 +63,7 @@ int main(int argc, char* argv[])
 
 
 
+
 }
+
+
