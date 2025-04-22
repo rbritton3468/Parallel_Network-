@@ -6,11 +6,13 @@
 #include <chrono>
 #include <atomic>
 
+//By Robert Britton
+
 // g++ -std=c++20 -I. -pthread processServer.cxx runEXE/runEXE.cxx -lcurl -o processServe
 uint16_t ServerPort = 9000;
 uint16_t WaitPort = 9001;
 
-
+std::atomic<bool> timeOut = true;
 boost::asio::io_context io;
 
 boost::asio::ip::udp::socket findOpenPort(uint16_t port) {
@@ -24,12 +26,8 @@ boost::asio::ip::udp::socket findOpenPort(uint16_t port) {
             exit(1);
         }
         return findOpenPort(port+1);
-        
     }
-
 }
-
-std::atomic<bool> timeOut = true;
 
 void TimOutTimer(){
     std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -39,8 +37,6 @@ void TimOutTimer(){
     }
 }
 
-
-
 int main(int argc, char* argv[]) {
     std::string exeCMD;
     if(argc < 3) { std::cerr << "usage: peer_a <peer‑ip> <exe>\n"; return 1; }
@@ -48,7 +44,6 @@ int main(int argc, char* argv[]) {
         exeCMD += argv[i];
         exeCMD += '\n';
     }
-
     boost::asio::ip::udp::endpoint serverEndPoint(boost::asio::ip::make_address(argv[1]), ServerPort);
     boost::asio::ip::udp::endpoint serverWaitPoint(boost::asio::ip::make_address(argv[1]), WaitPort);
 
@@ -62,16 +57,11 @@ int main(int argc, char* argv[]) {
     sock.receive_from(boost::asio::buffer(buf), serverEndPoint);
     timeOut.store(false);//starts timeout
 
-
     for(int i = 2; i < argc; i++){
         auto n = sock.receive_from(boost::asio::buffer(buf), serverEndPoint);
 
         std::cout<<std::string(std::string_view(buf.data(), n))<< std::endl;
         sock.send_to(boost::asio::buffer("NEXT RESULT"), serverWaitPoint);
-    }
-   
-
-
-
+    }   
     return 0;
 }
