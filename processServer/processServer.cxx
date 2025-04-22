@@ -6,6 +6,9 @@
 #include <chrono>
 #include <atomic>
 
+
+extern std::string runCommandAndGetOutput(std::string command);
+
 std::atomic<bool> timeOut = true;
 
 uint16_t  serverPort = 9999;
@@ -34,8 +37,7 @@ boost::asio::ip::udp::socket findOpenPort(uint16_t port) {
 
 
 std::string exeCMD(std::string cmd){//will run external command place holder
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    return " COMPLETED";
+    return cmd + ":\n" + runCommandAndGetOutput(cmd);
 }
 
 

@@ -6,7 +6,7 @@
 #include <chrono>
 #include <atomic>
 
-// g++ -std=c++20 -I. -pthread client.cxx -lcurl -o client
+// g++ -std=c++20 -I. -pthread processServer.cxx runEXE/runEXE.cxx -lcurl -o processServe
 uint16_t ServerPort = 9000;
 uint16_t WaitPort = 9001;
 
@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
     sock.send_to(boost::asio::buffer(exeCMD), serverEndPoint);
     std::thread timerThread(TimOutTimer);//Process Server has 5 seconds to send the initialization message or timeout occurs
     timerThread.detach();
-
     sock.receive_from(boost::asio::buffer(buf), serverEndPoint);
     timeOut.store(false);//starts timeout
 
