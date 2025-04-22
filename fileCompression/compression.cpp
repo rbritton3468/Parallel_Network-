@@ -1,5 +1,6 @@
 // importing necessary things
 #include "compression.hpp"
+#include "encryption.hpp"
 #include <vector>
 #include <cstdint>
 #include <fstream>
@@ -207,6 +208,17 @@ std::string compressFile(const std::string& inputExe){
         finalBytesTree.push_back(currByte);
     }
 
+    // encrpyting the data being sent
+    const u_int8_t global_key[32] = {
+        0x50, 0x61, 0x62, 0x6C, 0x6F, 0x20, 0x66, 0x6F,
+        0x72, 0x20, 0x50, 0x72, 0x65, 0x73, 0x69, 0x64,
+        0x65, 0x6E, 0x74, 0x20, 0x6F, 0x66, 0x20, 0x43,
+        0x6F, 0x6C, 0x6F, 0x6D, 0x62, 0x69, 0x61, 0x21
+    };
+
+    uint8_t nonce[12] = {0};
+    std::vector<uint8_t> encryptedData = encrypt_data(finalBytes, global_key, nonce);
+
 
     // writing to the file
     std::ofstream outputFile(inputExe + ".cmp", std::ios::binary);
@@ -217,12 +229,14 @@ std::string compressFile(const std::string& inputExe){
 
     outputFile.write(reinterpret_cast<const char*>(&treeSize), sizeof(treeSize));
     outputFile.write(reinterpret_cast<const char*>(finalBytesTree.data()), finalBytesTree.size());
-    outputFile.write(reinterpret_cast<const char*>(finalBytes.data()), finalBytes.size());
+    outputFile.write(reinterpret_cast<const char*>(encryptedData.data()), encryptedData.size());
 
     outputFile.close();
 
-    // std::cout << "old had a size of " << binary.size() << " bytes"<< std::endl;
-    // std::cout << "compressed has a size of " << finalBytes.size() << " bytes" << std::endl;
+    std::cout << "old had a size of " << binary.size() << " bytes"<< std::endl;
+    std::cout << "compressed has a size of " << finalBytes.size() << " bytes" << std::endl;
+    std::cout << "compressed file is " << (int)((static_cast<float>(finalBytes.size()) / binary.size()) * 100) << "% of original file" << std::endl;
+
 
     // returning name of output
     return inputExe + ".cmp";
@@ -303,9 +317,21 @@ void decompressFile(const std::string& compressedFile){
     // building our tree so we can use it again
     TreeNode* treeRoot = buildTreeFromVector(compressedTree);
 
+    // decrypting the data
+    // encrpyting the data being sent
+    const u_int8_t global_key[32] = {
+        0x50, 0x61, 0x62, 0x6C, 0x6F, 0x20, 0x66, 0x6F,
+        0x72, 0x20, 0x50, 0x72, 0x65, 0x73, 0x69, 0x64,
+        0x65, 0x6E, 0x74, 0x20, 0x6F, 0x66, 0x20, 0x43,
+        0x6F, 0x6C, 0x6F, 0x6D, 0x62, 0x69, 0x61, 0x21
+    };
+
+    uint8_t nonce[12] = {0};
+    std::vector<uint8_t> decryptedData = encrypt_data(decompressedData, global_key, nonce);
+
     // converting data to a string of bits
     std::string bitsToDecode = "";
-    for(uint8_t byte: decompressedData){
+    for(uint8_t byte: decryptedData){
         for (int i = 7; i >= 0; --i) {
             bitsToDecode += ((byte >> i) & 1) ? '1' : '0';
         }
@@ -338,3 +364,11 @@ void decompressFile(const std::string& compressedFile){
 
     chmod(fileName.c_str(), 0755);
 }
+
+// benchmarking to get the performance
+void benchmarking(std::vector<std::string> inputs){
+    for(std::string input: inputs){
+        compressFile(input);
+    }
+}
+

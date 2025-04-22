@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
+#include "encryption.hpp"
 
 const u_int8_t global_key[32] = {
     0x50, 0x61, 0x62, 0x6C, 0x6F, 0x20, 0x66, 0x6F,
