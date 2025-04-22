@@ -1,6 +1,10 @@
-std::string runCommandAndGetOutput(std::string_view command) {
+
+#include <iostream>
+#include "runEXE.hpp"
+
+std::string runCommandAndGetOutput(std::string command) {
     std::string output;
-    FILE* pipe = popen(std::string(command).c_str(), "r");
+    FILE* pipe = popen(command.c_str(), "r");
     if (!pipe) {
         std::cerr << "Failed to execute the following command : " << command << std::endl;
         return "";
