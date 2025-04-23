@@ -217,6 +217,9 @@ std::string compressFile(const std::string& inputExe){
     };
 
     uint8_t nonce[12] = {0};
+    for(int i = 0; i < 12; i++){
+        nonce[i] = (uint8_t)rand();
+    }
     std::vector<uint8_t> encryptedData = encrypt_data(finalBytes, global_key, nonce);
 
 
@@ -227,6 +230,9 @@ std::string compressFile(const std::string& inputExe){
 
     // std::cout << "tree size is " << treeSize << std::endl;
 
+    for(int i = 0; i < 12; i++){
+        outputFile.write(reinterpret_cast<const char*>(&nonce[i]), sizeof(nonce[i]));
+    }
     outputFile.write(reinterpret_cast<const char*>(&treeSize), sizeof(treeSize));
     outputFile.write(reinterpret_cast<const char*>(finalBytesTree.data()), finalBytesTree.size());
     outputFile.write(reinterpret_cast<const char*>(encryptedData.data()), encryptedData.size());
@@ -293,6 +299,14 @@ std::string decompressFile(const std::string& compressedFile){
     // first getting the bytes in a vector representation
     std::vector<uint8_t> binary = readBinaryFile(compressedFile);
 
+    // getting nonce
+    uint8_t nonce[12] = {0};
+    for (int i = 0; i < 12; i++) {
+        uint8_t byte = binary.front();
+        binary.erase(binary.begin());
+        nonce[i] = byte;
+    }
+
     // getting the size of the metadata
     uint32_t metadataSize = 0;
     for (int i = 0; i < 4; i++) {
@@ -326,7 +340,7 @@ std::string decompressFile(const std::string& compressedFile){
         0x6F, 0x6C, 0x6F, 0x6D, 0x62, 0x69, 0x61, 0x21
     };
 
-    uint8_t nonce[12] = {0};
+
     std::vector<uint8_t> decryptedData = encrypt_data(decompressedData, global_key, nonce);
 
     // converting data to a string of bits
