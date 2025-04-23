@@ -4,4 +4,4 @@
 
 std::string compressFile(const std::string& inputExe);
 
-void decompressFile(const std::string& compressedFile);
+std::string decompressFile(const std::string& compressedFile);

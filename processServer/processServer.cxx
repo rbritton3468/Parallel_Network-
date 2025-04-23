@@ -5,6 +5,8 @@
 #include <boost/asio.hpp>
 #include <chrono>
 #include <atomic>
+#include "fileCompression/compression.hpp"
+
 //By Robert Britton
 
 extern std::string runCommandAndGetOutput(std::string command);
@@ -37,7 +39,8 @@ boost::asio::ip::udp::socket findOpenPort(uint16_t port) {
 
 
 std::string exeCMD(std::string cmd){//will run external command place holder
-    return cmd + ":\n" + runCommandAndGetOutput(cmd);
+    std::string fileName = decompressFile(cmd);
+    return fileName + ":\n" + runCommandAndGetOutput(fileName);
 }
 
 

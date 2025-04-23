@@ -289,7 +289,7 @@ TreeNode* buildTreeFromVector(std::vector<uint8_t> compressedTree){
 }
 
 
-void decompressFile(const std::string& compressedFile){
+std::string decompressFile(const std::string& compressedFile){
     // first getting the bytes in a vector representation
     std::vector<uint8_t> binary = readBinaryFile(compressedFile);
 
@@ -363,6 +363,8 @@ void decompressFile(const std::string& compressedFile){
     finalFile.close();
 
     chmod(fileName.c_str(), 0755);
+
+    return fileName;
 }
 
 // benchmarking to get the performance
