@@ -39,11 +39,9 @@ boost::asio::ip::udp::socket findOpenPort(uint16_t port) {
 
 
 std::string exeCMD(std::string cmd){//will run external command place holder
-    std::string fileName = decompressFile(cmd);
-    return fileName + ":\n" + runCommandAndGetOutput(fileName);
+    // std::string fileName = decompressFile(cmd);
+    return cmd + ":\n" + runCommandAndGetOutput(cmd);
 }
-
-
 
 
 

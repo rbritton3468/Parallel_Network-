@@ -233,9 +233,9 @@ std::string compressFile(const std::string& inputExe){
 
     outputFile.close();
 
-    std::cout << "old had a size of " << binary.size() << " bytes"<< std::endl;
-    std::cout << "compressed has a size of " << finalBytes.size() << " bytes" << std::endl;
-    std::cout << "compressed file is " << (int)((static_cast<float>(finalBytes.size()) / binary.size()) * 100) << "% of original file" << std::endl;
+    // std::cout << "old had a size of " << binary.size() << " bytes"<< std::endl;
+    // std::cout << "compressed has a size of " << finalBytes.size() << " bytes" << std::endl;
+    // std::cout << "compressed file is " << (int)((static_cast<float>(finalBytes.size()) / binary.size()) * 100) << "% of original file" << std::endl;
 
 
     // returning name of output
