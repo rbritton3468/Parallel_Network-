@@ -90,20 +90,21 @@ class Client{
     boost::asio::io_context io;
     size_t clientID;
     std::queue<std::string> ProcessQueue;
-    std::queue<std::string> resultQueue;
     boost::asio::ip::udp::endpoint clientEndPoint;
     std::condition_variable allProcessComplete;
 
     size_t processCount = 0;
 
 
-        void sendMessage(std::string message){
+        int sendMessage(std::string message){
             std::lock_guard<std::mutex> lock(Clientsocket_mtx);
             std::string line;
             std::array<char, 1024> buf;
             Clientsocket.send_to(boost::asio::buffer(message), clientEndPoint);
             auto n = waitSocket.receive_from(boost::asio::buffer(buf), clientEndPoint);
             line =std::string(std::string_view(buf.data(), n));
+            processCount--;
+            return processCount;
         }
 
         void pushProcess(std::string process){
@@ -204,6 +205,7 @@ void clientAccept(){
         Clientsocket.send_to(boost::asio::buffer("Client Initialized"), clientEndPoint);
         std::string clientdata = std::string(std::string_view(buf.data(), n));
         std::cout << "New Client ID: " << clientID << " IP: " << clientIP << " Port: " << clientPort<< std::endl;
+
         Client* client = new Client(clientID,clientIP,clientPort);
         while(clientdata.find('\n') != std::string::npos){
             std::string process = clientdata.substr(0, clientdata.find('\n'));
@@ -221,7 +223,7 @@ void clientAccept(){
 void processExecutable(std::string path,ProcessServer* server,Client* client){
     std::string  exeResult;
     exeResult += server->receiveMessage(path);
-    client->sendMessage(exeResult);
+    if(client->sendMessage(exeResult)==0)delete client;
     serverQueue.add(server);
 
 }

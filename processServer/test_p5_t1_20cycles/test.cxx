@@ -3,7 +3,7 @@
 
 std::string exe = "./t1_test";
 
-#define N 5
+#define N 24
 
 bool result[N];
 std::thread thread[N];

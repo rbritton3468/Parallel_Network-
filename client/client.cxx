@@ -8,6 +8,8 @@
 
 //By Robert Britton
 
+//time ./client 127.0.0.1 ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test ./t1_test
+
 // g++ -std=c++20 -I. -pthread processServer.cxx runEXE/runEXE.cxx -lcurl -o processServe
 uint16_t ServerPort = 9000;
 uint16_t WaitPort = 9001;
