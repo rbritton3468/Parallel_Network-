@@ -29,12 +29,12 @@ class SafeQueue{
     void add(T obj){
         std::lock_guard<std::mutex> lock(mtx);
         queue.push(obj);
-        cv.notify_one();
+        cv.notify_one();//unblocks get when something is pushed 
     }
     T get(){
         std::unique_lock<std::mutex> lock(mtx);
         if(queue.empty()){
-            cv.wait(lock);
+            cv.wait(lock);//blocks until something is pushed
         }
         T obj = queue.front();
         queue.pop();
@@ -81,7 +81,7 @@ class Process{
         }
 };
 
-class Client{
+class Client{//class representing client 
     
     public:
 
@@ -112,8 +112,6 @@ class Client{
             processCount++;
         }
 
-    
-    
         Client(size_t id,std::string ip, uint16_t sendPort):
         clientID(id), IPAddress(ip),sendPort(sendPort),
         clientEndPoint(boost::asio::ip::make_address(ip), sendPort) // Properly initialize the endpoint
@@ -122,7 +120,7 @@ class Client{
 
 
 
-class ProcessServer{
+class ProcessServer{//class representing a ProcessServer
     public:
         uint16_t receivePort;
         uint16_t sendPort;
@@ -182,27 +180,27 @@ void ProcessServerInitialization(){
     while (true)
     {
         boost::asio::ip::udp::endpoint sender;
-        auto n = InitializationSocket.receive_from(boost::asio::buffer(buf), sender);
+        auto n = InitializationSocket.receive_from(boost::asio::buffer(buf), sender);//process server connects
         std::string processServerdata = std::string(std::string_view(buf.data(), n));
         std::string ip = sender.address().to_string();
         uint processServerPort = sender.port();
-        ProcessServer* processServer = new ProcessServer(idCounter,ip,processServerPort,9002+idCounter);
-        processServer->sendMessage("Process Server Initialized");
+        ProcessServer* processServer = new ProcessServer(idCounter,ip,processServerPort,9002+idCounter);//each process server gets its own port
+        processServer->sendMessage("Process Server Initialized");//send back a message to process server to assure it has been connected
         std::cout<<"New Process Server ID: " << idCounter << " IP: " << ip << " Port: " << processServerPort<< std::endl;
         serverQueue.add(processServer);
         idCounter++;
     }
 } 
 
-void clientAccept(){
+void clientAccept(){//function to accept client
     size_t clientID = 0;
     while(true){
         std::array<char, 1024> buf;
         boost::asio::ip::udp::endpoint clientEndPoint;
         auto n = Clientsocket.receive_from(boost::asio::buffer(buf), clientEndPoint);
-        uint16_t clientPort = clientEndPoint.port();
-        std::string clientIP = clientEndPoint.address().to_string();
-        Clientsocket.send_to(boost::asio::buffer("Client Initialized"), clientEndPoint);
+        uint16_t clientPort = clientEndPoint.port();//gets port of client
+        std::string clientIP = clientEndPoint.address().to_string();//gets IP of client as string
+        Clientsocket.send_to(boost::asio::buffer("Client Initialized"), clientEndPoint);//send back a message to client to assure it has been connected
         std::string clientdata = std::string(std::string_view(buf.data(), n));
         std::cout << "New Client ID: " << clientID << " IP: " << clientIP << " Port: " << clientPort<< std::endl;
 
@@ -222,9 +220,9 @@ void clientAccept(){
 
 void processExecutable(std::string path,ProcessServer* server,Client* client){
     std::string  exeResult;
-    exeResult += server->receiveMessage(path);
-    if(client->sendMessage(exeResult)==0)delete client;
-    serverQueue.add(server);
+    exeResult += server->receiveMessage(path);//send exe to run then adds to result string
+    if(client->sendMessage(exeResult)==0)delete client;//deletes client after all results have been sent to client
+    serverQueue.add(server);//pushes server back to server queue
 
 }
 
@@ -232,17 +230,17 @@ void processClient(Client* client){
     while(!(client->ProcessQueue.empty())){
         std::string process = client->ProcessQueue.front();
         client->ProcessQueue.pop();
-        ProcessServer* server = serverQueue.get();
-        std::thread processThread(processExecutable,process,server,client);
+        ProcessServer* server = serverQueue.get();//blocks until process server becomes available 
+        std::thread processThread(processExecutable,process,server,client);//creates thread to run process
         processThread.detach();
     }
 }
 
 int main(int argc, char* argv[]) {
-    std::thread initializationThread(ProcessServerInitialization);
-    std::thread clientThread(clientAccept);
+    std::thread initializationThread(ProcessServerInitialization);//thread to allow process servers to connect 
+    std::thread clientThread(clientAccept);//thread to allow clients to connect 
     while (true){
-        Client* currentClient = Clients.get();
+        Client* currentClient = Clients.get();//blocks until a Client is pushed
         processClient(currentClient);
     }
 return 0;

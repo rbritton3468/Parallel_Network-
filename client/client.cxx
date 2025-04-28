@@ -17,7 +17,7 @@ uint16_t WaitPort = 9001;
 std::atomic<bool> timeOut = true;
 boost::asio::io_context io;
 
-boost::asio::ip::udp::socket findOpenPort(uint16_t port) {
+boost::asio::ip::udp::socket findOpenPort(uint16_t port) {//recursively finds open port
     try{
         boost::asio::ip::udp::socket sock(io, {boost::asio::ip::udp::v4(), port});
         return sock;
@@ -31,7 +31,7 @@ boost::asio::ip::udp::socket findOpenPort(uint16_t port) {
     }
 }
 
-void TimOutTimer(){
+void TimOutTimer(){//time out thread
     std::this_thread::sleep_for(std::chrono::seconds(5));
     if(timeOut.load()){
         std::cout << "Timeout Occurred" << std::endl;
@@ -56,8 +56,8 @@ int main(int argc, char* argv[]) {
     sock.send_to(boost::asio::buffer(exeCMD), serverEndPoint);
     std::thread timerThread(TimOutTimer);//Process Server has 5 seconds to send the initialization message or timeout occurs
     timerThread.detach();
-    sock.receive_from(boost::asio::buffer(buf), serverEndPoint);
-    timeOut.store(false);//starts timeout
+    sock.receive_from(boost::asio::buffer(buf), serverEndPoint);//receives back from load mananger to assure connection
+    timeOut.store(false);//stops timeout
 
     for(int i = 2; i < argc; i++){
         auto n = sock.receive_from(boost::asio::buffer(buf), serverEndPoint);
